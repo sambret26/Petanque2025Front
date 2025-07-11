@@ -1,0 +1,13 @@
+.waiting-lists-container {
+  display: flex;
+  padding: 20px;
+}
+
+.waiting-team {
+  line-height: 10px;
+  margin: 7px 0;
+}
+
+.waiting-list {
+  width: 30%;
+}

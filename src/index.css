@@ -1,13 +1,287 @@
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f2f5; /* Couleur de fond douce */
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.container {
+  max-width: 100%;
+  padding: 0;
+}
+
+.not-a-button {
+  border: none;
+  padding: 0;
+}
+
+.column {
+  flex: 0 0 50%;
+  border-right: 2px solid #007bff; /* Bordure bleue plus épaisse entre les colonnes */
+  position: relative;
+  height: 100vh;
+}
+
+.title {
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+}
+
+.sub-columns {
+  display: flex;
+}
+
+.sub-column {
+  padding: 15px 0px;
+}
+
+.match-list {
+  flex: 2;
+}
+
+.footer-container {
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-around;
+}
+
+.footer button {
+  color: white;
+  border: none;
+  border-radius: 5px;
+  margin: 0 5px;
+}
+
+.blue {
+  background-color: #007bff;
+}
+
+.red {
+  background-color: #FF5722;
+}
+
+.yellow {
+  background-color: #ffc107;
+}
+
+.green{
+  background-color: #28a745;
+}
+
+.blue:hover {
+  background-color: #0056b3;
+}
+
+.red:hover {
+  background-color: #E64A19;
+}
+
+.yellow:hover {
+  background-color: #e0a800;
+}
+
+.green:hover {
+  background-color: #218838;
+}
+
+.match {
+  margin-bottom: 3px; /* Espacement entre les éléments */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Ombre légère */
+  transition: background-color 0.3s ease; /* Transition fluide pour les changements de couleur */
+}
+
+.match.green {
+  background-color: #4CAF50; /* Vert moyen */
+}
+
+.match.orange {
+  background-color: #FF5722; /* Orange vif */
+}
+
+.match.default {
+  background-color: #FFFFFF; /* Blanc */
+}
+
+.match-label {
+  width: 3ch; /* Fixe la largeur à 3 caractères */
+  text-align: center; /* Centre le texte */
+  overflow: hidden; /* Cache tout dépassement */
+  white-space: nowrap; /* Évite les retours à la ligne */
+  text-overflow: ellipsis; /* Ajoute des points de suspension si nécessaire */
+  margin: 0 5px; /* Espacement entre le numéro et le bouton radio */
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #FF5722; /* Orange vif pour les contrôles */
+  margin-right: 5px;
+}
+
+input[type="checkbox"]:hover,
+input[type="radio"]:hover {
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.match-list-container, .match-controls-container {
+  display: flex;
+  margin-right: 40px;
+  gap: 1rem;
+}
+
+/* Les divs à l'intérieur de chaque colonne */
+.match {
+  display: flex;
+  justify-content: center; /* Centre le contenu à l'intérieur de la div */
+  align-items: center;
+}
+
+/* Style des champs de saisie */
+.match-input {
+  padding: 5px 0px 5px 0px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.winner-input, .loser-input {
+  width: 100%;
+}
+
+.match-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+/* Style spécifique pour les champs d'équipe */
+.team-input {
+  width: 43%
+}
+
+/* Style du texte VS */
+.vs-text {
+  font-weight: bold;
+}
+
+.validate-btn {
+  height: 40px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.real-input {
+  border: 1px solid #ccc;
+  height: 35px;
+}
+
+input {
+  text-align: center;
+} 
+
+.header-title {
+  font-weight: bold;
+  font-size: 18px;
+  text-align: center;
+}
+
+.buttons {
+  padding-top: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 50px; /* Espace général entre les groupes */
+}
+
+.button-start {
+  border: none;
+  border-radius: 5px;
+  color: #ffffff;
+  padding: 10px 20px;
+  transition: background-color 0.3s;
+  width: 300px; /* Pour uniformiser la largeur des boutons */
+}
+
+.init {
+  margin-bottom: 150px;
+}
+
+/* Conteneur pour l'inscription d'équipes */
+.register-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.register {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.register:hover {
+  background-color: #e0a800;
+}
+
+.match-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.col1 {
+  width: 40%;
+}
+
+.col2 {
+  width: 30%;
+}
+
+.col3 {
+  width: 30%;
+}
+
+
+.last-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.quart {
+  flex: 4 1 0%; /* 4/10 de la hauteur totale */
+  position: relative; /* Pour permettre le placement du footer */
+}
+
+.demi {
+  flex: 4 1 0%; /* 4/10 de la hauteur totale */
+  position: relative; /* Pour permettre le placement du footer */
+}
+
+.finale {
+  flex: 3 1 0%; /* 3/10 de la hauteur totale */
+  position: relative; /* Pour permettre le placement du footer */
+}
+
+.finale .header-controls {
+  display: none;
+}
+
+/* Styles spécifiques pour les sections "quart", "demi" et "finale" */
+.quart,
+.demi,
+.finale {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto; /* Centre la div horizontalement dans sa colonne parent */
+  /*margin-bottom: 5px;*/
 }
