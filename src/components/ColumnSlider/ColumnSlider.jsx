@@ -60,7 +60,7 @@ const ColumnSlider = ({ children }) => {
         aria-label="Précédent"
       >
         <span className="visually-hidden">Précédent</span>
-        &larr;
+        <span aria-hidden="true">&larr;</span>
       </button>
       <div 
         className="columns" 
@@ -75,7 +75,7 @@ const ColumnSlider = ({ children }) => {
         aria-label="Suivant"
       >
         <span className="visually-hidden">Suivant</span>
-        &rarr;
+        <span aria-hidden="true">&rarr;</span>
       </button>
     </div>
   );

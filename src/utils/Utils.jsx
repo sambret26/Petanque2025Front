@@ -1,4 +1,4 @@
-export const getRoundAndCategorieByValue = (value) => {
+export const getStageAndCategorieByValue = (value) => {
     switch (value) {
         case 1: return [1, 3];
         case 2: return [2, 3];

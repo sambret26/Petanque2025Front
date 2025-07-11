@@ -95,6 +95,9 @@ body {
   margin-bottom: 3px; /* Espacement entre les éléments */
   box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Ombre légère */
   transition: background-color 0.3s ease; /* Transition fluide pour les changements de couleur */
+  display: flex;
+  justify-content: center; /* Centre le contenu à l'intérieur de la div */
+  align-items: center;
 }
 
 .match.green {
@@ -134,13 +137,6 @@ input[type="radio"]:hover {
   display: flex;
   margin-right: 40px;
   gap: 1rem;
-}
-
-/* Les divs à l'intérieur de chaque colonne */
-.match {
-  display: flex;
-  justify-content: center; /* Centre le contenu à l'intérieur de la div */
-  align-items: center;
 }
 
 /* Style des champs de saisie */
@@ -283,5 +279,4 @@ input {
   display: flex;
   flex-direction: column;
   margin: 0 auto; /* Centre la div horizontalement dans sa colonne parent */
-  /*margin-bottom: 5px;*/
 }

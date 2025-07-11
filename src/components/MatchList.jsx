@@ -12,10 +12,12 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
 
   const handleSetWinner = async (match, team) => {
     const response = await onRadioChange(match.id, team);
-    match.winner = team
-    match.status = 2;
-    updateMatches(match);
-    await loadAllWaitingList();
+    if (response) {
+      match.winner = team
+      match.status = 2;
+      updateMatches(match);
+      await loadAllWaitingList();
+    }
     if (response === 201) {
       let loser = match.team1 === match.winner ? match.team2 : match.team1;
       setErrorMessage(`Les équipes suivantes n'ont pas été inscrites au tour suivant car elles ont déjà un match prévu: ${loser}`);
@@ -29,7 +31,6 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
     }
   }
 
-  // TODO : Vérifier qu'ils ne sont pas déjà dans un autre match, et désinscrire
   const handleUnsetWinner = async (match) => {
     const response = await onRadioChange(match.id, 0);
     if (response === 200) {
@@ -81,16 +82,26 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
     }
   };
 
+  const getBackgroundColor = (match) => {
+    if (match.winner) {
+      return 'green';
+    } else if (match.status > 0) {
+      return 'orange';
+    } else {
+      return '';
+    }
+  }
+
   return (
     <div className="match-list-container">
-      {chunks.map((chunk, index) => (
-        <div key={index} className="match-list">
+      {chunks.map((chunk) => (
+        <div key={chunk.id} className="match-list">
           {chunk.map((match) => (
             <div 
               key={match.id}
               className={`match match-${match.id}`}
               style={{
-                backgroundColor: match.winner ? 'green' : match.status > 0 ? 'orange' : ''
+                backgroundColor: getBackgroundColor(match)
               }}
             >
             <span className="match-label">{match.team1}</span>
@@ -116,7 +127,6 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
             <input
               type="checkbox"
               name={match.id}
-              panel={panel}
               checked={match.status > 0}
               onChange={(e) => handleCheckboxChange(match, e.target.checked ? 1 : 0)}
             />

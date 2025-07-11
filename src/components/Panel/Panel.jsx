@@ -1,11 +1,12 @@
 import React from 'react';
 import WaitingList from '../WaitingList/WaitingList';
 import MatchList from '../MatchList';
+import PropTypes from 'prop-types';
 
-const Panel = ({ panel, panels, panelMatches, waitingsTeams, createMatchTeam1, createMatchTeam2, validateWinnerTeam, validateLoserTeam, luckyLoserTeam, handleGenerate, handleUngenerate, startMatches, handleLuckyLoser, handleCreateMatch, handleSetWinner, handleSetLoser, handleDeleteMatch, setCreateMatchTeam1, setCreateMatchTeam2, setValidateWinnerTeam, setValidateLoserTeam, setLuckyLoserTeam, setGlobalErrorMessage, matches, setMatches, deleteMatch, setErrorMessage, setShowNotRegisterModal, loadAllWaitingList, setWinner, changeStatus }) => {
+const Panel = ({ panel, panels, panelMatches, waitingsTeams, createMatchTeam1, createMatchTeam2, validateWinnerTeam, validateLoserTeam, luckyLoserTeam, handleGenerate, handleUngenerate, startMatches, handleLuckyLoser, handleCreateMatch, handleSetWinner, handleSetLoser, handleDeleteMatch, setCreateMatchTeam1, setCreateMatchTeam2, setValidateWinnerTeam, setValidateLoserTeam, setLuckyLoserTeam, setGlobalErrorMessage, matches, setMatches, setErrorMessage, setShowNotRegisterModal, loadAllWaitingList, setWinner, changeStatus }) => {
   return (
     <div key={panel} className="column">
-      <div className="title">{panels.find(r => r.id === parseInt(panel))?.title || `Round ${panel}`}</div>
+      <div className="title">{panels.find(r => r.id === parseInt(panel))?.title}</div>
       <div className="content">
         <div className="sub-columns">
           <div className="waiting-list-global">
@@ -140,5 +141,38 @@ const Panel = ({ panel, panels, panelMatches, waitingsTeams, createMatchTeam1, c
     </div>
   )
 };
+
+Panel.propTypes =  {
+  panel: PropTypes.number.isRequired,
+  panels: PropTypes.array.isRequired,
+  panelMatches: PropTypes.array.isRequired,
+  waitingsTeams: PropTypes.object.isRequired,
+  createMatchTeam1: PropTypes.object.isRequired,
+  createMatchTeam2: PropTypes.object.isRequired,
+  validateWinnerTeam: PropTypes.string.isRequired,
+  validateLoserTeam: PropTypes.string.isRequired,
+  luckyLoserTeam: PropTypes.object.isRequired,
+  handleGenerate: PropTypes.func.isRequired,
+  handleUngenerate: PropTypes.func.isRequired,
+  startMatches: PropTypes.func.isRequired,
+  handleLuckyLoser: PropTypes.func.isRequired,
+  handleCreateMatch: PropTypes.func.isRequired,
+  handleSetWinner: PropTypes.func.isRequired,
+  handleSetLoser: PropTypes.func.isRequired,
+  handleDeleteMatch: PropTypes.func.isRequired,
+  setCreateMatchTeam1: PropTypes.func.isRequired,
+  setCreateMatchTeam2: PropTypes.func.isRequired,
+  setValidateWinnerTeam: PropTypes.func.isRequired,
+  setValidateLoserTeam: PropTypes.func.isRequired,
+  setLuckyLoserTeam: PropTypes.func.isRequired,
+  setGlobalErrorMessage: PropTypes.func.isRequired,
+  matches: PropTypes.object.isRequired,
+  setMatches: PropTypes.func.isRequired,
+  setErrorMessage: PropTypes.func.isRequired,
+  setShowNotRegisterModal: PropTypes.func.isRequired,
+  loadAllWaitingList: PropTypes.func.isRequired,
+  setWinner: PropTypes.func.isRequired,
+  changeStatus: PropTypes.func.isRequired
+}
 
 export default Panel;

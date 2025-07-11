@@ -14,7 +14,7 @@ import { getNumber, getWaiting, register, unregister, luckyLoser } from "./servi
 import { init } from "./service/tournamentService.js";
 
 // Imports utils et tech
-import { getRoundAndCategorieByValue } from "./utils/Utils.jsx";
+import { getStageAndCategorieByValue } from "./utils/Utils.jsx";
 import { useDisableSwipeBack } from "./utils/Tech.jsx";
 
 // Imports styles
@@ -58,12 +58,12 @@ const App = () => {
 
   // Définition des panels
   const panels = useMemo(() => [
-    { id: 1, title: "Round 1"},
-    { id: 2, title: "Round 2 Vainqueurs"},
-    { id: 3, title: "Round 2 Perdants"},
-    { id: 4, title: "Round 3 Doubles Vainqueurs"},
-    { id: 5, title: "Round 3 1 victoire 1 défaite"},
-    { id: 6, title: "Round 3 Doubles Perdants"},
+    { id: 1, title: "Manche 1"},
+    { id: 2, title: "Manche 2 Vainqueurs"},
+    { id: 3, title: "Manche 2 Perdants"},
+    { id: 4, title: "Manche 3 Doubles Vainqueurs"},
+    { id: 5, title: "Manche 3 1 victoire 1 défaite"},
+    { id: 6, title: "Manche 3 Doubles Perdants"},
     { id: 7, title: "Seizièmes de finale" },
     { id: 8, title: "Huitièmes de finale" },
     { id: 9, title: "Quarts de finale" },
@@ -146,16 +146,15 @@ const App = () => {
       const allWaitingTeams = await loadWaitingList(-1);
       for (const team of allWaitingTeams) {
         for (const panel of panels) {
-          const [round, cat] = getRoundAndCategorieByValue(panel.id);
-          const roundProp = `round${round}`;
-          const catProp = `catRound${round}`;
+          const [stage, cat] = getStageAndCategorieByValue(panel.id);
+          const stageProp = `stage${stage}`;
+          const catProp = `cat_stage${stage}`;
                     
-          if (team[roundProp] === 1 && team[catProp] === cat) {
+          if (team[stageProp] === 1 && team[catProp] === cat) {
             waitingTeams[panel.id].push(team.number);
           }
         }
       }
-      console.log(waitingTeams);
       setWaitingsTeams(waitingTeams);
     } catch (error) {
       setGlobalErrorMessage(`Erreur lors du chargement de la liste d'attente: ${error.message}`);
@@ -254,7 +253,7 @@ const App = () => {
   };
 
   const handleUnregister = () => {
-    if (unregisterTeamNumber === '' || !/^[0-9]+$/.test(unregisterTeamNumber)) {
+    if (unregisterTeamNumber === '' || !/^\d+$/.test(unregisterTeamNumber)) {
       setGlobalErrorMessage('Veuillez entrer un numéro d\'equipe');
       return;
     }
@@ -390,13 +389,13 @@ const App = () => {
     }
     startLoading(`Création du match ...`);
     let response = await createMatch(parseInt(panel), team1, team2);
-    if (response.match) {
+    if (response?.match) {
       setMatches({ ...matches, [panel]: [...matches[panel], response.match] });
       setWaitingsTeams({ ...waitingsTeams, [panel]: waitingsTeams[panel].filter(team => team !== team1 && team !== team2) });
       setCreateMatchTeam1({ ...createMatchTeam1, [panel]: '' });
       setCreateMatchTeam2({ ...createMatchTeam2, [panel]: '' });
     }
-    if (response.status === 201) {
+    if (response?.status === 201) {
       setGlobalErrorMessage('Erreur lors de la création du match');
     }
     stopLoading();
@@ -418,7 +417,7 @@ const App = () => {
       setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe');
       return;
     }
-    if (!/^[0-9]+$/.test(team)) {
+    if (!/^\d+$/.test(team)) {
       setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe valide');
       return;
     }
@@ -596,7 +595,7 @@ const App = () => {
           open={showNotRegisterModal}
           onCancel={() => setShowNotRegisterModal(false)}
           title="Résultat rejeté"
-          footer={[ <Button onClick={() => setShowNotRegisterModal(false)}>Fermer</Button> ]}
+          footer={[ <Button key="close-button" onClick={() => setShowNotRegisterModal(false)}>Fermer</Button> ]}
         >
           <p> {errorMessage}</p>
         </AntModal>

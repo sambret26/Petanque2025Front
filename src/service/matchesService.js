@@ -9,7 +9,7 @@ export async function getMatches(panel) {
         if (!response.ok) {
             throw new Error(`Erreur lors de la récupération des matchs du tableau ${panel}: ${response.status}`);
         }
-        return await response.json();
+        return await response?.json();
     } catch (error) {
         console.error(`Erreur lors de la récupération des matchs du tableau ${panel}: ${error}`);
         return [];

@@ -13,8 +13,8 @@ const WaitingList = ({ teams }) => {
 
   return (
     <div className="waiting-lists-container">
-      {chunks.map((chunk, index) => (
-        <div key={index} className="waiting-list">
+      {chunks.map((chunk) => (
+        <div key={chunk.id} className="waiting-list">
           {chunk.map((team) => (
             <div key={team} className="waiting-team">{team}</div>
           ))}
