@@ -1,17 +1,21 @@
+// Imports libraires
 import React from 'react';
 import PropTypes from 'prop-types';
 
-const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGlobalErrorMessage, matches, setMatches, deleteMatch, setErrorMessage, setShowNotRegisterModal, loadAllWaitingList }) => {
+// Imports services
+import { changeStatus, setWinner } from '../service/matchesService';
+
+const MatchList = ({ matchesPanel, matches, setMatches, handleDeleteMatch, setErrorMessage, setShowNotRegisterModal, loadAllWaitingList }) => {
 
   const chunkSize = 23;
   const chunks = [];
   
   for (let i = 0; i < matchesPanel.length; i += chunkSize) {
-    chunks.push(matchesPanel.slice(i, i + chunkSize));
+    chunks.push({id: i, value: matchesPanel.slice(i, i + chunkSize)});
   }
 
   const handleSetWinner = async (match, team) => {
-    const response = await onRadioChange(match.id, team);
+    const response = await setWinner(match.id, team);
     if (response) {
       match.winner = team
       match.status = 2;
@@ -32,7 +36,7 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
   }
 
   const handleUnsetWinner = async (match) => {
-    const response = await onRadioChange(match.id, 0);
+    const response = await setWinner(match.id, 0);
     if (response === 200) {
       match.winner = 0
       match.status = 1;
@@ -66,19 +70,10 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
   };
 
   const handleCheckboxChange = async (match, status) => {
-    if (match.status !== 2) {
+    const responseStatus = await changeStatus(match.id);
+    if (responseStatus === 200) {
       match.status = status;
       updateMatches(match);
-      
-      const matchDiv = document.querySelector(`.match-${match.id}`);
-      if (matchDiv !== null) {
-        matchDiv.style.backgroundColor = status > 0 ? 'orange' : '';
-      }
-      
-      // Appeler la fonction de callback
-      await onCheckboxChange(match.id);
-    } else {
-      setGlobalErrorMessage('Le match est deja terminé');
     }
   };
 
@@ -96,7 +91,7 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
     <div className="match-list-container">
       {chunks.map((chunk) => (
         <div key={chunk.id} className="match-list">
-          {chunk.map((match) => (
+          {chunk.value.map((match) => (
             <div 
               key={match.id}
               className={`match match-${match.id}`}
@@ -124,16 +119,18 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
               onKeyDown={handleKeyDown}
             />
             <span className="match-label">{match.team2}</span>
-            <input
-              type="checkbox"
-              name={match.id}
-              checked={match.status > 0}
-              onChange={(e) => handleCheckboxChange(match, e.target.checked ? 1 : 0)}
-            />
+            {match.status !== 2 && (
+              <input
+                type="checkbox"
+                name={match.id}
+                checked={match.status > 0}
+                onChange={(e) => handleCheckboxChange(match, e.target.checked ? 1 : 0)}
+              />
+            )}
             {match.status === 0 && (
               <button 
                 className="match-delete not-a-button" 
-                onClick={() => deleteMatch(match)}
+                onClick={() => handleDeleteMatch(match)}
               >&#10060;</button>
             )}
           </div>
@@ -146,13 +143,9 @@ const MatchList = ({ matchesPanel, panel, onRadioChange, onCheckboxChange, setGl
 
 MatchList.propTypes = {
   matchesPanel: PropTypes.array.isRequired,
-  panel: PropTypes.number.isRequired,
-  onRadioChange: PropTypes.func.isRequired,
-  onCheckboxChange: PropTypes.func.isRequired,
-  setGlobalErrorMessage: PropTypes.func.isRequired,
   matches: PropTypes.object.isRequired,
   setMatches: PropTypes.func.isRequired,
-  deleteMatch: PropTypes.func.isRequired,
+  handleDeleteMatch: PropTypes.func.isRequired,
   setErrorMessage: PropTypes.func.isRequired,
   setShowNotRegisterModal: PropTypes.func.isRequired,
   loadAllWaitingList: PropTypes.func.isRequired

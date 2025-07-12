@@ -9,8 +9,8 @@ import Loader from "./components/Loader/Loader";
 import Panel from "./components/Panel/Panel.jsx";
 
 // Imports services
-import { getMatches, generate, ungenerate, launchMatches, changeStatus, setWinner, createMatch, deleteMatch} from "./service/matchesService.js";
-import { getNumber, getWaiting, register, unregister, luckyLoser } from "./service/teamsService.js";
+import { getMatches, setWinner} from "./service/matchesService.js";
+import { getNumber, getWaiting, register, unregister } from "./service/teamsService.js";
 import { init } from "./service/tournamentService.js";
 
 // Imports utils et tech
@@ -48,9 +48,6 @@ const App = () => {
 
   // États pour les inputs
   const [unregisterTeamNumber, setUnregisterTeamNumber] = useState('');
-  const [createMatchTeam1, setCreateMatchTeam1] = useState(['' * 11]);
-  const [createMatchTeam2, setCreateMatchTeam2] = useState(['' * 11]);
-  const [luckyLoserTeam, setLuckyLoserTeam] = useState(['' * 11]);
   const [validateWinnerTeam, setValidateWinnerTeam] = useState('');
   const [validateLoserTeam, setValidateLoserTeam] = useState('');
   const [teamToRegister, setTeamToRegister] = useState('');
@@ -208,20 +205,6 @@ const App = () => {
     loadInitialData();
   }, [loadAllData]);
 
-  const loadPanel = useCallback(async(panelNumber) => {
-    startLoading(`Chargement des données du tableau ${panelNumber}...`);
-    try {
-      const matchs = await loadMatches(panelNumber);
-      const waitingTeams = await loadWaitingList(panelNumber);
-      setMatches({ ...matches, [panelNumber]: matchs });
-      setWaitingsTeams({ ...waitingsTeams, [panelNumber]: waitingTeams});
-    } catch (error) {
-      setGlobalErrorMessage(`Erreur lors du chargement des données initiales: ${error.message}`);
-    } finally {
-      stopLoading();
-    }
-  }, [loadMatches, loadWaitingList, startLoading, stopLoading, matches, setMatches, waitingsTeams, setWaitingsTeams]);
-
   const loadFirstPanelOnly = async () => {
     startLoading('Chargement des données du tableau 1...');
     try {
@@ -284,26 +267,6 @@ const App = () => {
     }
   };
 
-  const handleEnter = () => {
-    handleSetWinner();
-  };
-
-  const startMatches = async (panel) => {
-    startLoading(`Démarrage des matchs du tableau ${panel}...`);
-    try {
-      const status = await launchMatches(panel);
-      if (status !== 200) {
-        setGlobalErrorMessage(`Erreur lors du démarrage des matchs: ${status}`);
-        return;
-      }
-      await loadPanel(panel);
-    } catch (error) {
-      setGlobalErrorMessage(`Erreur lors du démarrage des matchs: ${error.message}`);
-    } finally {
-      stopLoading();
-    }
-  };
-
   const handleSetWinner = async () => {
     if (validateWinnerTeam) {
       const match = Object.values(matches)
@@ -325,126 +288,6 @@ const App = () => {
     }
   }
 
-  const handleSetLoser = async() => {
-    if(validateLoserTeam) {
-      const match = Object.values(matches)
-        .flat()
-        .find(m => ([m.team1, m.team2].includes(parseInt(validateLoserTeam))) && ([0, 1].includes(m.status)));
-      if (!match) {
-        setGlobalErrorMessage(`L'équipe ${validateLoserTeam} n'est affectée à aucun match en cours`);
-        return;
-      }
-      const winner = match.team1 === validateLoserTeam ? match.team2 : match.team1;
-      const status = await setWinner(match.id, parseInt(winner));
-      if (status === 200) {
-        const radio = document.querySelector(`input[type="radio"][name="${match.id}"][value="${winner}"]`);
-        radio.checked = true;
-        await radio.click();
-        setValidateLoserTeam('');
-      }
-    } else {
-      setGlobalErrorMessage('Veuillez sélectionner un perdant');
-    }
-  }
-
-  const handleGenerate = async (panel) => {
-    startLoading(`Génération des matchs du tableau ${panel}...`);
-    await generate(parseInt(panel));
-    await loadPanel(parseInt(panel));
-    stopLoading();
-  };
-
-  const handleUngenerate = async (panel) => {
-    startLoading(`Dégénération des matchs du tableau ${panel}...`);
-    await ungenerate(parseInt(panel));
-    await loadPanel(parseInt(panel));
-    stopLoading();
-  };
-
-  const handleCreateMatch = async (panel) => {
-    const team1 = parseInt(createMatchTeam1[panel]);
-    const team2 = parseInt(createMatchTeam2[panel]);
-    
-    if (!team1) {
-      setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe valide pour l\'équipe 1');
-      return;
-    }
-    
-    if (!team2) {
-      setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe valide pour l\'équipe 2');
-      return;
-    }
-    
-    if (team1 === team2) {
-      setGlobalErrorMessage('Veuillez entrer deux numéros d\'équipes différents');
-      return;
-    }
-    if (!waitingsTeams[panel]?.includes(team1)) {
-      setGlobalErrorMessage(`L'équipe ${team1} n'est pas dans la liste des équipes en attente pour ce panel`);
-      return;
-    }
-    if (!waitingsTeams[panel]?.includes(team2)) {
-      setGlobalErrorMessage(`L'équipe ${team2} n'est pas dans la liste des équipes en attente pour ce panel`);
-      return;
-    }
-    startLoading(`Création du match ...`);
-    let response = await createMatch(parseInt(panel), team1, team2);
-    if (response?.match) {
-      setMatches({ ...matches, [panel]: [...matches[panel], response.match] });
-      setWaitingsTeams({ ...waitingsTeams, [panel]: waitingsTeams[panel].filter(team => team !== team1 && team !== team2) });
-      setCreateMatchTeam1({ ...createMatchTeam1, [panel]: '' });
-      setCreateMatchTeam2({ ...createMatchTeam2, [panel]: '' });
-    }
-    if (response?.status === 201) {
-      setGlobalErrorMessage('Erreur lors de la création du match');
-    }
-    stopLoading();
-  };
-
-  const handleDeleteMatch = async (match) => {
-    startLoading('Suppression du match ...');
-    let status = await deleteMatch(match.id);
-    if (status === 200) {
-      await loadAllWaitingList();
-      setMatches({ ...matches, [match.panel]: matches[match.panel].filter(m => m.id !== match.id) });
-    }
-    stopLoading();
-  };
-
-  const handleLuckyLoser = async (panel) => {
-    const team = luckyLoserTeam[panel];
-    if (team === '') {
-      setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe');
-      return;
-    }
-    if (!/^\d+$/.test(team)) {
-      setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe valide');
-      return;
-    }
-    startLoading('Repêchage ...');
-    const status = await luckyLoser(panel, team);
-    if ([204, 206, 207].includes(status)) {
-      await loadAllData();
-    }
-    stopLoading();
-    if (status === 201) {
-      setGlobalErrorMessage(`L'équipe ${team} n'existe pas`);
-    }
-    else if (status === 202) {
-      setGlobalErrorMessage(`L'équipe ${team} est déjà en lice au tour suivant`);
-    }
-    else if (status === 203) {
-      setGlobalErrorMessage(`L'équipe ${team} est déjà dans un match sur ce tour`);
-    }
-    else if (status === 205) {
-      setGlobalErrorMessage(`L'équipe ${team} est déjà dans la liste des équipes en attente`);
-    }
-    else {
-      setGlobalSuccessMessage(`L'équipe ${team} a bien été repêchée`);
-    }
-    setLuckyLoserTeam({ ...luckyLoserTeam, [panel]: '' });
-  };
-
   return (
     <>
       {contextHolder}
@@ -453,7 +296,7 @@ const App = () => {
           <KeyHandler
             onLeftArrow={handleLeftArrow}
             onRightArrow={handleRightArrow}
-            onEnter={handleEnter}
+            onEnter={handleSetWinner}
           />
         )}
         <ColumnSlider>
@@ -497,29 +340,32 @@ const App = () => {
           {Object.entries(matches)
             .filter(([panel]) => !(parseInt(panel) === 7 && totalTeam < 129))
             .map(([panel, panelMatches]) => (
-            <Panel key={panel} panel={panel} panels={panels} panelMatches={panelMatches} waitingsTeams={waitingsTeams} createMatchTeam1={createMatchTeam1} createMatchTeam2={createMatchTeam2} validateWinnerTeam={validateWinnerTeam} validateLoserTeam={validateLoserTeam} luckyLoserTeam={luckyLoserTeam} handleGenerate={handleGenerate} handleUngenerate={handleUngenerate} startMatches={startMatches} handleLuckyLoser={handleLuckyLoser} handleCreateMatch={handleCreateMatch} handleSetWinner={handleSetWinner} handleSetLoser={handleSetLoser} handleDeleteMatch={handleDeleteMatch} setCreateMatchTeam1={setCreateMatchTeam1} setCreateMatchTeam2={setCreateMatchTeam2} setValidateWinnerTeam={setValidateWinnerTeam} setValidateLoserTeam={setValidateLoserTeam} setLuckyLoserTeam={setLuckyLoserTeam} setGlobalErrorMessage={setGlobalErrorMessage} matches={matches} setMatches={setMatches} deleteMatch={handleDeleteMatch} setErrorMessage={setErrorMessage} setShowNotRegisterModal={setShowNotRegisterModal} loadAllWaitingList={loadAllWaitingList} setWinner={setWinner} changeStatus={changeStatus}/>
+            <Panel
+              key={parseInt(panel)}
+              panel={parseInt(panel)}
+              panels={panels}
+              panelMatches={panelMatches}
+              loadMatches={loadMatches}
+              waitingsTeams={waitingsTeams}
+              setWaitingsTeams={setWaitingsTeams}
+              loadWaitingList={loadWaitingList}
+              loadAllData={loadAllData}
+              validateWinnerTeam={validateWinnerTeam}
+              validateLoserTeam={validateLoserTeam}
+              handleSetWinner={handleSetWinner}
+              setValidateWinnerTeam={setValidateWinnerTeam}
+              setValidateLoserTeam={setValidateLoserTeam}
+              setGlobalSuccessMessage={setGlobalSuccessMessage}
+              setGlobalErrorMessage={setGlobalErrorMessage}
+              matches={matches}
+              setMatches={setMatches}
+              setErrorMessage={setErrorMessage}
+              setShowNotRegisterModal={setShowNotRegisterModal}
+              loadAllWaitingList={loadAllWaitingList}
+              startLoading={startLoading}
+              stopLoading={stopLoading} 
+            />
           ))}
-
-          {/*<div className="column last-column">
-            {finalStages.map(stage => (
-              <div key={stage.id} className={`${stage.additionalClass}`}>
-                <h2>{stage.title}</h2>
-                <MatchList
-                  matchesPanel={matches[stage.id] || []}
-                  panel={stage.id}
-                  onRadioChange={setWinner}
-                  onCheckboxChange={changeStatus}
-                  setGlobalErrorMessage={setGlobalErrorMessage}
-                  matches={matches}
-                  setMatches={setMatches}
-                  deleteMatch={handleDeleteMatch}
-                  setErrorMessage={setErrorMessage}
-                  setShowNotRegisterModal={setShowNotRegisterModal}
-                  loadAllWaitingList={loadAllWaitingList}
-                />
-              </div>
-            ))}
-          </div>*/}
         </ColumnSlider>
 
         {/* Modales */}
