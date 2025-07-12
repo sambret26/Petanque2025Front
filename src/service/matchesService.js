@@ -26,6 +26,7 @@ export async function generate(panel) {
         if (!response.ok) {
             throw new Error(`Erreur lors de la génération: ${response.status}`);
         }
+        return response.status;
     } catch (error) {
         console.error(`Erreur lors de la génération: ${error}`);
     }

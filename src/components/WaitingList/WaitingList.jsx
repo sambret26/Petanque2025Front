@@ -8,14 +8,14 @@ const WaitingList = ({ teams }) => {
   const chunks = [];
   
   for (let i = 0; i < teams.length; i += chunkSize) {
-    chunks.push(teams.slice(i, i + chunkSize));
+    chunks.push({id: i,value: teams.slice(i, i + chunkSize)});
   }
 
   return (
     <div className="waiting-lists-container">
       {chunks.map((chunk) => (
         <div key={chunk.id} className="waiting-list">
-          {chunk.map((team) => (
+          {chunk.value.map((team) => (
             <div key={team} className="waiting-team">{team}</div>
           ))}
         </div>

@@ -15,37 +15,55 @@ const MatchList = ({ matchesPanel, matches, setMatches, handleDeleteMatch, setEr
   }
 
   const handleSetWinner = async (match, team) => {
+    const oldWinner = match.winner;
+    const oldStatus = match.status;
+    match.winner = team;
+    match.status = 2;
+    updateMatches(match);
     const response = await setWinner(match.id, team);
-    if (response) {
-      match.winner = team
-      match.status = 2;
-      updateMatches(match);
+    if([200, 201, 202, 203].includes(response)) {
       await loadAllWaitingList();
+      if (response === 201) {
+        let loser = match.team1 === match.winner ? match.team2 : match.team1;
+        setErrorMessage(`Les équipes suivantes n'ont pas été inscrites au tour suivant car elles ont déjà un match prévu: ${loser}`);
+        setShowNotRegisterModal(true);
+      } else if (response === 202) {
+        setErrorMessage(`Les équipes suivantes n'ont pas été inscrites au tour suivant car elles ont déjà un match prévu: ${match.winner}`);
+        setShowNotRegisterModal(true);
+      } else if (response === 203) {
+        setErrorMessage(`Les équipes suivantes n'ont pas été inscrites au tour suivant car elles ont déjà un match prévu: ${match.team1 + " et " + match.team2}`);
+        setShowNotRegisterModal(true);
+      }
+      return;
     }
-    if (response === 201) {
-      let loser = match.team1 === match.winner ? match.team2 : match.team1;
-      setErrorMessage(`Les équipes suivantes n'ont pas été inscrites au tour suivant car elles ont déjà un match prévu: ${loser}`);
-      setShowNotRegisterModal(true);
-    } else if (response === 202) {
-      setErrorMessage(`Les équipes suivantes n'ont pas été inscrites au tour suivant car elles ont déjà un match prévu: ${match.winner}`);
-      setShowNotRegisterModal(true);
-    } else if (response === 203) {
-      setErrorMessage(`Les équipes suivantes n'ont pas été inscrites au tour suivant car elles ont déjà un match prévu: ${match.team1 + " et " + match.team2}`);
-      setShowNotRegisterModal(true);
-    }
+    match.winner = oldWinner;
+    match.status = oldStatus;
+    updateMatches(match);
+    setErrorMessage(`Une erreur est intervenue, le résultat n'a pas été modifié`);
+    setShowNotRegisterModal(true);
   }
 
   const handleUnsetWinner = async (match) => {
+    const oldWinner = match.winner;
+    const oldStatus = match.status;
+    match.winner = 0
+    match.status = 1;
+    updateMatches(match);
     const response = await setWinner(match.id, 0);
     if (response === 200) {
-      match.winner = 0
-      match.status = 1;
-      updateMatches(match);
       await loadAllWaitingList();
-    } else {
+      return;
+    }
+    if ([201, 202, 203].includes(response)) {
       setErrorMessage(`Impossible de changer le résultat, les équipes sont inscrites dans un autre match`);
       setShowNotRegisterModal(true);
+    } else {
+      setErrorMessage(`Une erreur est intervenue, le résultat n'a pas été modifié`);
+      setShowNotRegisterModal(true);
     }
+    match.winner = oldWinner;
+    match.status = oldStatus
+    updateMatches(match);
   }
 
   const handleRadioChange = async (matchId, team) => {
@@ -70,10 +88,15 @@ const MatchList = ({ matchesPanel, matches, setMatches, handleDeleteMatch, setEr
   };
 
   const handleCheckboxChange = async (match, status) => {
+    const oldStatus = match.status;
+    match.status = status;
+    updateMatches(match);
     const responseStatus = await changeStatus(match.id);
-    if (responseStatus === 200) {
-      match.status = status;
+    if (responseStatus !== 200) {
+      match.status = oldStatus;
       updateMatches(match);
+      setErrorMessage(`Une erreur est intervenue, le statut du match n'a pas pu être modifié`);
+      setShowNotRegisterModal(true);
     }
   };
 

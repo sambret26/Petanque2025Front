@@ -7,9 +7,10 @@ import ColumnSlider from "./components/ColumnSlider/ColumnSlider.jsx";
 import KeyHandler from "./components/KeyHandler";
 import Loader from "./components/Loader/Loader";
 import Panel from "./components/Panel/Panel.jsx";
+import NumberInput from "./components/NumberInput";
 
 // Imports services
-import { getMatches, setWinner} from "./service/matchesService.js";
+import { getMatches } from "./service/matchesService.js";
 import { getNumber, getWaiting, register, unregister } from "./service/teamsService.js";
 import { init } from "./service/tournamentService.js";
 
@@ -228,7 +229,7 @@ const App = () => {
       setGlobalErrorMessage('Veuillez entrer un nombre d\'equipes');
       return;
     }
-    if (parseInt(teamToRegister) > 200) {
+    if (teamToRegister > 200) {
       setGlobalErrorMessage('Impossible d\'inscrire plus de 200 équipes');
       return;
     }
@@ -236,7 +237,7 @@ const App = () => {
   };
 
   const handleUnregister = () => {
-    if (unregisterTeamNumber === '' || !/^\d+$/.test(unregisterTeamNumber)) {
+    if (unregisterTeamNumber === '' ) {
       setGlobalErrorMessage('Veuillez entrer un numéro d\'equipe');
       return;
     }
@@ -271,18 +272,15 @@ const App = () => {
     if (validateWinnerTeam) {
       const match = Object.values(matches)
         .flat()
-        .find(m => ([m.team1, m.team2].includes(parseInt(validateWinnerTeam))) && ([0, 1].includes(m.status)));
+        .find(m => ([m.team1, m.team2].includes(parseInt(validateWinnerTeam)) && ([0, 1].includes(m.status))));
       if (!match) {
         setGlobalErrorMessage(`L'équipe ${validateWinnerTeam} n'est affectée à aucun match en cours`);
         return;
       }
-      const status = await setWinner(match.id, parseInt(validateWinnerTeam));
-      if (status === 200) {
-        const radio = document.querySelector(`input[type="radio"][name="${match.id}"][value="${validateWinnerTeam}"]`);
-        radio.checked = true;
-        radio.click();
-        setValidateWinnerTeam('');
-      }
+      const radio = document.querySelector(`input[type="radio"][name="${match.id}"][value="${validateWinnerTeam}"]`);
+      radio.checked = true;
+      await radio.click();
+      setValidateWinnerTeam('');
     } else {
       setGlobalErrorMessage('Veuillez sélectionner un vainqueur');
     }
@@ -307,12 +305,11 @@ const App = () => {
                 Réinitialiser le tournoi
               </button>
               <div className="register-container">
-                <input
+                <NumberInput
                   id="team-count"
                   className="real-input"
                   placeholder="Nombre d'équipes"
                   value={teamToRegister}
-                  autoComplete="off"
                   onChange={(e) => setTeamToRegister(e.target.value)}
                 />
                 <button className="register button-start" onClick={handleRegister}>
@@ -323,12 +320,11 @@ const App = () => {
                 Ajouter une équipe
               </button>
               <div className="register-container">
-                <input
+                <NumberInput
                   id="team-unregister-number"
                   className="real-input"
                   placeholder="Numéro de triplette"
                   value={unregisterTeamNumber}
-                  autoComplete="off"
                   onChange={(e) => setUnregisterTeamNumber(e.target.value)}
                 />
                 <button className="unregister button-start blue" onClick={handleUnregister}>
@@ -349,7 +345,6 @@ const App = () => {
               waitingsTeams={waitingsTeams}
               setWaitingsTeams={setWaitingsTeams}
               loadWaitingList={loadWaitingList}
-              loadAllData={loadAllData}
               validateWinnerTeam={validateWinnerTeam}
               validateLoserTeam={validateLoserTeam}
               handleSetWinner={handleSetWinner}

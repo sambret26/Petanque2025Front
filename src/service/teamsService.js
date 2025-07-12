@@ -53,7 +53,7 @@ export async function unregister(teamNumber) {
         if (!response.ok) {
             throw new Error(`Erreur lors de la désinscription de l'équipe: ${response.status}`);
         }
-        return parseInt(response.status);
+        return response.status;
     } catch (error) {
         console.error(`Erreur lors de la désinscription de l'équipe: ${error}`);
     }
@@ -68,7 +68,7 @@ export async function luckyLoser(panel, team) {
         if (!response.ok) {
             throw new Error(`Erreur lors de la désinscription de l'équipe: ${response.status}`);
         }
-        return parseInt(response.status);
+        return response.status;
     } catch (error) {
         console.error(`Erreur lors de la désinscription de l'équipe: ${error}`);
     }

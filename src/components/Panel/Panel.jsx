@@ -5,12 +5,13 @@ import PropTypes from 'prop-types';
 // Imports composants
 import WaitingList from '../WaitingList/WaitingList';
 import MatchList from '../MatchList';
+import NumberInput from '../NumberInput';
 
 // Imports services
 import { luckyLoser } from '../../service/teamsService.js';
-import { generate, ungenerate, launchMatches, setWinner, createMatch, deleteMatch} from "../../service/matchesService.js";
+import { generate, ungenerate, launchMatches, createMatch, deleteMatch} from "../../service/matchesService.js";
 
-const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWaitingsTeams, loadWaitingList, loadAllData, validateWinnerTeam, validateLoserTeam, handleSetWinner, setValidateWinnerTeam, setValidateLoserTeam, setGlobalSuccessMessage, setGlobalErrorMessage, matches, setMatches, setErrorMessage, setShowNotRegisterModal, loadAllWaitingList, startLoading, stopLoading }) => {
+const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWaitingsTeams, loadWaitingList, validateWinnerTeam, validateLoserTeam, handleSetWinner, setValidateWinnerTeam, setValidateLoserTeam, setGlobalSuccessMessage, setGlobalErrorMessage, matches, setMatches, setErrorMessage, setShowNotRegisterModal, loadAllWaitingList, startLoading, stopLoading }) => {
 
   const [createMatchTeam1, setCreateMatchTeam1] = useState(['' * 11]);
   const [createMatchTeam2, setCreateMatchTeam2] = useState(['' * 11]);
@@ -48,15 +49,19 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
 
   const handleGenerate = async (panel) => {
     startLoading(`Génération des matchs du tableau ${panel}...`);
-    await generate(parseInt(panel));
-    await loadPanel(parseInt(panel));
+    const status = await generate(panel);
+    if (status == 200) {
+      await loadPanel(panel);
+    } else {
+      setGlobalErrorMessage('Une erreur est intervenue lors de la génération des matchs, veuillez réessayer')
+    }
     stopLoading();
   };
 
   const handleUngenerate = async (panel) => {
     startLoading(`Dégénération des matchs du tableau ${panel}...`);
-    await ungenerate(parseInt(panel));
-    await loadPanel(parseInt(panel));
+    await ungenerate(panel);
+    await loadPanel(panel);
     stopLoading();
   };
 
@@ -66,14 +71,10 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
       setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe');
       return;
     }
-    if (!/^\d+$/.test(team)) {
-      setGlobalErrorMessage('Veuillez entrer un numéro d\'équipe valide');
-      return;
-    }
     startLoading('Repêchage ...');
     const status = await luckyLoser(panel, team);
     if ([204, 206, 207].includes(status)) {
-      await loadAllData();
+      await loadAllWaitingList();
     }
     stopLoading();
     if (status === 201) {
@@ -119,16 +120,21 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
       return;
     }
     startLoading(`Création du match ...`);
-    let response = await createMatch(parseInt(panel), team1, team2);
+    let response = await createMatch(panel, team1, team2);
     if (response?.match) {
       setMatches({ ...matches, [panel]: [...matches[panel], response.match] });
       setWaitingsTeams({ ...waitingsTeams, [panel]: waitingsTeams[panel].filter(team => team !== team1 && team !== team2) });
-      setCreateMatchTeam1({ ...createMatchTeam1, [panel]: '' });
-      setCreateMatchTeam2({ ...createMatchTeam2, [panel]: '' });
     }
-    if (response?.status === 201) {
+    else if (response?.status === 201) {
       setGlobalErrorMessage('Erreur lors de la création du match');
     }
+    else if (response?.status === 202) {
+      setGlobalErrorMessage('Les équipes se sont déjà rencontrées');
+    } else {
+      setGlobalErrorMessage('Erreur lors de la création du match');
+    }
+    setCreateMatchTeam1({ ...createMatchTeam1, [panel]: '' });
+    setCreateMatchTeam2({ ...createMatchTeam2, [panel]: '' });
     stopLoading();
   };
 
@@ -141,14 +147,11 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
         setGlobalErrorMessage(`L'équipe ${validateLoserTeam} n'est affectée à aucun match en cours`);
         return;
       }
-      const winner = match.team1 === validateLoserTeam ? match.team2 : match.team1;
-      const status = await setWinner(match.id, parseInt(winner));
-      if (status === 200) {
-        const radio = document.querySelector(`input[type="radio"][name="${match.id}"][value="${winner}"]`);
-        radio.checked = true;
-        await radio.click();
-        setValidateLoserTeam('');
-      }
+      const winner = match.team1 === parseInt(validateLoserTeam) ? match.team2 : match.team1;
+      const radio = document.querySelector(`input[type="radio"][name="${match.id}"][value="${winner}"]`);
+      radio.checked = true;
+      await radio.click();
+      setValidateLoserTeam('');
     } else {
       setGlobalErrorMessage('Veuillez sélectionner un perdant');
     }
@@ -160,13 +163,15 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
     if (status === 200) {
       await loadAllWaitingList();
       setMatches({ ...matches, [match.panel]: matches[match.panel].filter(m => m.id !== match.id) });
+    } else {
+      setGlobalErrorMessage('Une erreur est intervenue lors de la suppression du match');
     }
     stopLoading();
   };
 
   return (
     <div key={panel} className="column">
-      <div className="title">{panels.find(r => r.id === parseInt(panel))?.title}</div>
+      <div className="title">{panels.find(r => r.id === panel)?.title}</div>
       <div className="content">
         <div className="sub-columns">
           <div className="waiting-list-global">
@@ -183,22 +188,20 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
               {/* Colonne création de match */}
               <div className="match-column col1">
                 <div className="match-row">
-                  <input
+                  <NumberInput
                     id={`match-team1-input-${panel}`}
                     className="match-input team-input"
                     placeholder="Equipe 1"
                     value={createMatchTeam1[panel] || ''}
-                    autoComplete="off"
-                    onChange={(e) => setCreateMatchTeam1({...createMatchTeam1, [panel]: e.target.value})}
+                    onChange={(e) => setCreateMatchTeam1({ ...createMatchTeam1, [panel]: e.target.value })}
                   />
                   <span className="vs-text">vs</span>
-                  <input
+                  <NumberInput
                     id={`match-team2-input-${panel}`}
                     className="match-input team-input"
                     placeholder="Equipe 2"
                     value={createMatchTeam2[panel] || ''}
-                    autoComplete="off"
-                    onChange={(e) => setCreateMatchTeam2({...createMatchTeam2, [panel]: e.target.value})}
+                    onChange={(e) => setCreateMatchTeam2({ ...createMatchTeam2, [panel]: e.target.value })}
                   />
                 </div>
                 <div className="match-row">
@@ -210,12 +213,11 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
               {/* Colonne validation de match */}
               <div className="match-column col2">
                 <div className="match-row">
-                  <input
+                  <NumberInput
                     id={`winner-input-${panel}`}
                     className="match-input winner-input"
                     placeholder="Vainqueur"
                     value={validateWinnerTeam}
-                    autoComplete="off"
                     onChange={(e) => setValidateWinnerTeam(e.target.value)}
                   />
                 </div>
@@ -228,12 +230,11 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
               {/* Colonne validation de perdant */}
               <div className="match-column col3">
                 <div className="match-row">
-                  <input
+                  <NumberInput
                     id={`loser-input-${panel}`}
                     className="match-input loser-input"
                     placeholder="Perdant"
                     value={validateLoserTeam}
-                    autoComplete="off"
                     onChange={(e) => setValidateLoserTeam(e.target.value)}
                   />
                 </div>
@@ -261,33 +262,32 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
           <div className="footer">
             <button
               className="blue"
-              onClick={() => handleGenerate(parseInt(panel))}
+              onClick={() => handleGenerate(panel)}
             >
               Générer les matchs
             </button>
             <button
               className="red"
-              onClick={() => handleUngenerate(parseInt(panel))}
+              onClick={() => handleUngenerate(panel)}
             >
               Défaire les matchs
             </button>
             <button
               className="blue"
-              onClick={() => startMatches(parseInt(panel))}
+              onClick={() => startMatches(panel)}
             >
               Lancer les matchs
             </button>
-            <input
+            <NumberInput
               id={`lucky-loser-${panel}`}
               className="match-input lucky-loser real-input"
               placeholder="Equipe"
               value={luckyLoserTeam[panel]}
-              autoComplete="off"
               onChange={(e) => setLuckyLoserTeam({ ...luckyLoserTeam, [panel]: e.target.value })}
             />
             <button
               className="yellow"
-              onClick={() => handleLuckyLoser(parseInt(panel))}
+              onClick={() => handleLuckyLoser(panel)}
             >
               Repêcher
             </button>
@@ -306,7 +306,6 @@ Panel.propTypes =  {
   waitingsTeams: PropTypes.object.isRequired,
   setWaitingsTeams: PropTypes.func.isRequired,
   loadWaitingList: PropTypes.func.isRequired,
-  loadAllData: PropTypes.func.isRequired,
   validateWinnerTeam: PropTypes.string.isRequired,
   validateLoserTeam: PropTypes.string.isRequired,
   handleSetWinner: PropTypes.func.isRequired,
