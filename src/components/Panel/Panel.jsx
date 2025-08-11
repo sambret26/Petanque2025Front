@@ -1,5 +1,5 @@
 // Imports libraires
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
 
 // Imports composants
@@ -10,12 +10,72 @@ import NumberInput from '../NumberInput';
 // Imports services
 import { luckyLoser } from '../../service/teamsService.js';
 import { generate, ungenerate, launchMatches, createMatch, deleteMatch} from "../../service/matchesService.js";
+import { generatePrint, downloadPdf } from "../../service/printService.js";
+
+// Imports utils
+import { getStageAndCategorieByValue } from "../../utils/Utils.jsx";
+
+// Imports css
+import './PrintPopup.css';
 
 const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWaitingsTeams, loadWaitingList, validateWinnerTeam, validateLoserTeam, handleSetWinner, setValidateWinnerTeam, setValidateLoserTeam, setGlobalSuccessMessage, setGlobalErrorMessage, matches, setMatches, setErrorMessage, setShowNotRegisterModal, loadAllWaitingList, startLoading, stopLoading }) => {
 
   const [createMatchTeam1, setCreateMatchTeam1] = useState(['' * 11]);
   const [createMatchTeam2, setCreateMatchTeam2] = useState(['' * 11]);
   const [luckyLoserTeam, setLuckyLoserTeam] = useState(['' * 11]);
+  const [showPrintPopup, setShowPrintPopup] = useState(false);
+  const [printRound, setPrintRound] = useState(0);
+  const [printOptions, setPrintOptions] = useState({
+    scope: 'current', // 'current' ou 'all'
+    matchStatus: 'all' // 'all' ou 'started'
+  });
+  const popupRef = useRef(null);
+  const printButtonRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Ne pas fermer si on clique sur le bouton d'impression ou à l'intérieur de la popup
+      if (popupRef.current && 
+          !popupRef.current.contains(event.target) && 
+          printButtonRef.current && 
+          !printButtonRef.current.contains(event.target)) {
+        setShowPrintPopup(false);
+      }
+    }
+    
+    if (showPrintPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPrintPopup]);
+
+  const handlePrint = async () => {
+    try {
+      startLoading('Génération du PDF en cours...');
+
+      const pdfBlob = await generatePrint(printRound, printOptions);
+
+      if (pdfBlob === 201) {
+        setGlobalErrorMessage('Aucun match trouvé avec les critères spécifiés');
+        return;
+      }
+      
+      const [stage] = getStageAndCategorieByValue(printRound);
+      const fileName = `Matchs-${stage}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      downloadPdf(pdfBlob, fileName);
+      setShowPrintPopup(false);
+      setGlobalSuccessMessage('Feuille de match générée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la génération du PDF:', error);
+      setGlobalErrorMessage('Erreur lors de la génération du PDF');
+    } finally {
+      stopLoading();
+    }
+  };
 
   const loadPanel = useCallback(async(panelNumber) => {
     startLoading(`Chargement des données du tableau ${panelNumber}...`);
@@ -50,7 +110,7 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
   const handleGenerate = async (panel) => {
     startLoading(`Génération des matchs du tableau ${panel}...`);
     const status = await generate(panel);
-    if (status == 200) {
+    if (status === 200) {
       await loadPanel(panel);
     } else {
       setGlobalErrorMessage('Une erreur est intervenue lors de la génération des matchs, veuillez réessayer')
@@ -169,9 +229,116 @@ const Panel = ({ panel, panels, panelMatches, loadMatches, waitingsTeams, setWai
     stopLoading();
   };
 
+  const setPeriod = () => {
+    if (printRound === 1 || printRound > 6) {
+      return null;
+    }
+    const values = getStageAndCategorieByValue(printRound);
+    return (
+      <>
+        <label>Période :</label>
+        <div className="radio-group">
+          <label>
+            <input 
+              type="radio" 
+              name="scope" 
+              checked={printOptions.scope === 'current'}
+              onChange={() => setPrintOptions({...printOptions, scope: 'current'})}
+            />
+            Seulement {panels.find(r => r.id === panel)?.title}
+          </label>
+          <label>
+                  <input 
+                    type="radio" 
+                    name="scope" 
+                    checked={printOptions.scope === 'all'}
+                    onChange={() => setPrintOptions({...printOptions, scope: 'all'})}
+                  />
+                  Toute la Manche {values[0]}
+                </label>
+        </div>
+      </>
+    );
+  }
+
+  const setMatchs = () => {
+    return (
+      <>
+        <label>Matchs :</label>
+        <div className="radio-group">
+          <label>
+            <input 
+              type="radio" 
+              name="matchStatus" 
+              checked={printOptions.matchStatus === 'all'}
+              onChange={() => setPrintOptions({...printOptions, matchStatus: 'all'})}
+            />
+            Tous les matchs
+          </label>
+          <label>
+            <input 
+              type="radio" 
+              name="matchStatus" 
+              checked={printOptions.matchStatus === 'started'}
+              onChange={() => setPrintOptions({...printOptions, matchStatus: 'started'})}
+            />
+            Uniquement les matchs lancés
+          </label>
+        </div>
+      </>
+    );
+  }
+
   return (
     <div key={panel} className="column">
-      <div className="title">{panels.find(r => r.id === panel)?.title}</div>
+      <div className="title">
+        <span>{panels.find(r => r.id === panel)?.title}</span>
+        <button 
+          ref={printButtonRef}
+          className="print-button-icon"
+          title="Options d'impression"
+          onClick={(e) => {
+            e.stopPropagation();
+            setPrintRound(panel);
+            setShowPrintPopup(!showPrintPopup);
+          }}
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+        </button>
+        
+        {showPrintPopup && (
+          <div ref={popupRef} className="print-popup">
+            <div className="print-option">
+              {setPeriod()}
+            </div>
+            
+            <div className="print-option">
+              {setMatchs()}
+            </div>
+            
+            <button 
+              className="print-button"
+              onClick={handlePrint}
+            >
+              Imprimer
+            </button>
+          </div>
+        )}
+      </div>
       <div className="content">
         <div className="sub-columns">
           <div className="waiting-list-global">
